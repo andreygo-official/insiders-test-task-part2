@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id               String            @id @default(cuid())
+  name             String
+  email            String            @unique
+  passwordHash     String
+  avatarUrl        String?
+  role             Role              @default(USER)
+  books            Book[]
+  sentRequests     ExchangeRequest[] @relation("SentRequests")
+  receivedRequests ExchangeRequest[] @relation("ReceivedRequests")
+  createdAt        DateTime          @default(now())
+}
+
+model Book {
+  id        String            @id @default(cuid())
+  name      String
+  author    String
+  photoUrl  String?
+  ownerId   String
+  owner     User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  requests  ExchangeRequest[]
+  createdAt DateTime          @default(now())
+
+  @@index([ownerId])
+  @@index([name])
+  @@index([author])
+}
+
+model ExchangeRequest {
+  id          String   @id @default(cuid())
+  senderId    String
+  recipientId String
+  bookId      String
+  sender      User     @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient   User     @relation("ReceivedRequests", fields: [recipientId], references: [id], onDelete: Cascade)
+  book        Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@index([senderId])
+  @@index([recipientId])
+}
